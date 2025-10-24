@@ -1,11 +1,7 @@
 from fastdtw import fastdtw
-import numpy as np
 
 def find_closest_pair(cluster):
-    """
-    Find the most similar pair of signals in a given cluster using DTW distance.
-    Returns ((idx1, idx2), distance)
-    """
+    """Find the most similar pair of signals in a given cluster."""
     if len(cluster) < 2:
         return (None, None), 0.0
 
