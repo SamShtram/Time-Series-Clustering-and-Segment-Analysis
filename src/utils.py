@@ -5,18 +5,18 @@ import seaborn as sns
 import h5py
 from scipy.io import loadmat
 
-def load_dataset(path="data/VitalDB_Train_Subset.mat", signal_type="ABP", limit=1000):
+def load_dataset(path="data/VitalDB_AAMI_Test_Subset.mat", signal_type="ABP", limit=1000):
     """
-    Load ABP/ECG/PPG time-series segments from PulseDB or VitalDB .mat files.
-    Supports MATLAB v7.3 (HDF5) and older versions.
-    Detects nested 'subset' structure in VitalDB files automatically.
+    Load ABP/ECG/PPG time-series segments from VitalDB or PulseDB .mat files.
+    Supports MATLAB v7.3 (HDF5) and older formats.
+    For VitalDB, extracts from 'Subset/Signals' (shape: time x channels x segments).
     """
     print(f"Loading {signal_type} signals from: {path}")
 
     signals = None
 
     try:
-        # Try loading as standard MATLAB file (non-HDF5)
+        # Try normal MAT (non-HDF5)
         data = loadmat(path)
         key_candidates = [k for k in data.keys() if signal_type.lower() in k.lower()]
         if not key_candidates:
@@ -25,39 +25,42 @@ def load_dataset(path="data/VitalDB_Train_Subset.mat", signal_type="ABP", limit=
         signals = data[key]
         print(f"Loaded (non-HDF5) {signal_type} data using SciPy.")
     except (NotImplementedError, KeyError):
-        # MATLAB v7.3 / HDF5-based loader
+        # Handle MATLAB v7.3 (HDF5)
         print("Detected MATLAB v7.3 (HDF5) file — using h5py loader.")
         with h5py.File(path, "r") as f:
-            keys = list(f.keys())
-            if "subset" in keys:
-                subset_group = f["subset"]
-                # Look for signal datasets inside subset, e.g. 'ABP', 'ECG', 'PPG'
-                candidates = [k for k in subset_group.keys() if signal_type.lower() in k.lower()]
-                if not candidates:
-                    raise KeyError(f"No '{signal_type}' found under 'subset'. Available: {list(subset_group.keys())}")
-                key = candidates[0]
-                signals = np.array(subset_group[key])
+            if "Subset" in f.keys():
+                subset = f["Subset"]
+                if "Signals" not in subset.keys():
+                    raise KeyError(f"No 'Signals' dataset found under 'Subset'. Keys: {list(subset.keys())}")
+                signals = np.array(subset["Signals"])  # shape = (time, channels, segments)
+                print(f"Signals shape: {signals.shape}")
             else:
-                # Fallback if no 'subset' group is present
-                candidates = [k for k in f.keys() if signal_type.lower() in k.lower()]
-                if not candidates:
-                    raise KeyError(f"No '{signal_type}' dataset found. Keys: {keys}")
-                key = candidates[0]
-                signals = np.array(f[key])
+                raise KeyError(f"No 'Subset' group found in {path}. Keys: {list(f.keys())}")
 
-    # Normalize and clean signals
+    # Extract desired signal type from channel index
+    if signals.ndim == 3:  # time x channel x segment
+        if signal_type.upper() == "ABP":
+            idx = 0
+        elif signal_type.upper() == "ECG":
+            idx = 1
+        elif signal_type.upper() == "PPG":
+            idx = 2
+        else:
+            raise ValueError("Invalid signal_type. Choose from 'ABP', 'ECG', 'PPG'.")
+
+        selected = signals[:, idx, :]
+        segments_raw = [selected[:, i] for i in range(selected.shape[1])]
+    else:
+        segments_raw = [np.array(s).flatten() for s in signals]
+
+    # Normalize and clean
     segments = []
-    for i, s in enumerate(signals):
-        if len(segments) >= limit:
-            break
-        try:
-            segment = np.array(s).flatten()
-            if np.any(np.isnan(segment)):
-                continue
-            segment = (segment - np.mean(segment)) / np.std(segment)
-            segments.append(segment)
-        except Exception:
+    for s in segments_raw[:limit]:
+        s = s.astype(float)
+        if np.any(np.isnan(s)):
             continue
+        s = (s - np.mean(s)) / np.std(s)
+        segments.append(s)
 
     print(f"Loaded {len(segments)} {signal_type} segments from {os.path.basename(path)}")
     return segments
