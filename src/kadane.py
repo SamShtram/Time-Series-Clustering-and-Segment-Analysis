@@ -1,8 +1,5 @@
 def kadane(signal):
-    """
-    Apply Kadane’s algorithm to find the subarray with maximum sum.
-    Returns (start_index, end_index, max_sum)
-    """
+    """Find maximum subarray (Kadane’s Algorithm)."""
     max_sum = current_sum = signal[0]
     start = end = temp_start = 0
 
