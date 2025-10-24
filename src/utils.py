@@ -8,15 +8,15 @@ from scipy.io import loadmat
 def load_dataset(path="data/VitalDB_Train_Subset.mat", signal_type="ABP", limit=1000):
     """
     Load ABP/ECG/PPG time-series segments from PulseDB or VitalDB .mat files.
-    Works for both MATLAB v7.3 (HDF5) and older versions.
-    Normalizes each signal to zero mean and unit variance.
+    Supports MATLAB v7.3 (HDF5) and older versions.
+    Detects nested 'subset' structure in VitalDB files automatically.
     """
     print(f"Loading {signal_type} signals from: {path}")
 
     signals = None
 
-    # Try normal .mat loading first (non-HDF5)
     try:
+        # Try loading as standard MATLAB file (non-HDF5)
         data = loadmat(path)
         key_candidates = [k for k in data.keys() if signal_type.lower() in k.lower()]
         if not key_candidates:
@@ -25,16 +25,27 @@ def load_dataset(path="data/VitalDB_Train_Subset.mat", signal_type="ABP", limit=
         signals = data[key]
         print(f"Loaded (non-HDF5) {signal_type} data using SciPy.")
     except (NotImplementedError, KeyError):
-        # Handle MATLAB v7.3 (HDF5-based)
+        # MATLAB v7.3 / HDF5-based loader
         print("Detected MATLAB v7.3 (HDF5) file — using h5py loader.")
         with h5py.File(path, "r") as f:
-            key_candidates = [k for k in f.keys() if signal_type.lower() in k.lower()]
-            if not key_candidates:
-                raise KeyError(f"No '{signal_type}' dataset found in {path}. Keys: {list(f.keys())}")
-            key = key_candidates[0]
-            signals = np.array(f[key])
+            keys = list(f.keys())
+            if "subset" in keys:
+                subset_group = f["subset"]
+                # Look for signal datasets inside subset, e.g. 'ABP', 'ECG', 'PPG'
+                candidates = [k for k in subset_group.keys() if signal_type.lower() in k.lower()]
+                if not candidates:
+                    raise KeyError(f"No '{signal_type}' found under 'subset'. Available: {list(subset_group.keys())}")
+                key = candidates[0]
+                signals = np.array(subset_group[key])
+            else:
+                # Fallback if no 'subset' group is present
+                candidates = [k for k in f.keys() if signal_type.lower() in k.lower()]
+                if not candidates:
+                    raise KeyError(f"No '{signal_type}' dataset found. Keys: {keys}")
+                key = candidates[0]
+                signals = np.array(f[key])
 
-    # Process and normalize signals
+    # Normalize and clean signals
     segments = []
     for i, s in enumerate(signals):
         if len(segments) >= limit:
@@ -62,7 +73,7 @@ def plot_clusters(clusters):
 
     for i, cluster in enumerate(clusters):
         plt.figure(figsize=(10, 4))
-        for s in cluster[:3]:  # Plot up to 3 sample signals
+        for s in cluster[:3]:
             plt.plot(s, alpha=0.7)
         plt.title(f"Cluster {i+1} (n={len(cluster)})")
         plt.xlabel("Time (samples)")
