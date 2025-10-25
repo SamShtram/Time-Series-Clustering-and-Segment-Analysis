@@ -7,6 +7,8 @@ This approach demonstrates that purely algorithmic techniques — without machin
 
 #IN ORDER TO RUN THIS PROJECT
 
+MAKE SURE TO HAVE A RUNNING VERSION OF PYTHON AND GIT ON YOUR LOCAL MACHINE
+
 git clone https://github.com/YourUsername/Time-Series-Clustering-and-Segment-Analysis.git
 
 cd Time-Series-Clustering-and-Segment-Analysis
