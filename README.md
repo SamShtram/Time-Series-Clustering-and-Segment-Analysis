@@ -7,11 +7,18 @@ This approach demonstrates that purely algorithmic techniques — without machin
 
 #IN ORDER TO RUN THIS PROJECT
 git clone https://github.com/YourUsername/Time-Series-Clustering-and-Segment-Analysis.git
+
 cd Time-Series-Clustering-and-Segment-Analysis
+
 python -m venv venv
+
 source venv/bin/activate        # Mac/Linux
+
 venv\Scripts\activate           # Windows
+
 pip install -r requirements.txt
+
 python src/main.py
+
 this will run the entire code, it will take upwards of 5 minutes to finsih executing, all results will output into the results folder
 
