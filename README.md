@@ -6,6 +6,7 @@ It identifies clusters of similar signal segments, finds the most cohesive (clos
 This approach demonstrates that purely algorithmic techniques — without machine learning — can still extract meaningful physiological insights from biomedical time-series data.
 
 #IN ORDER TO RUN THIS PROJECT
+
 git clone https://github.com/YourUsername/Time-Series-Clustering-and-Segment-Analysis.git
 
 cd Time-Series-Clustering-and-Segment-Analysis
