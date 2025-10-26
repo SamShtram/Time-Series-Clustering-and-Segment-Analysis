@@ -16,7 +16,7 @@ def main():
     # --- Step 1: Divide-and-Conquer Clustering ---
     print("Clustering time-series segments...")
     clusters = divide_and_conquer_cluster(segments, max_size=10, method="dtw")
-    print(f"✅ Generated {len(clusters)} clusters.")
+    print(f" Generated {len(clusters)} clusters.")
 
     # --- Step 2: Closest Pair per Cluster ---
     for i, cluster in enumerate(clusters):
@@ -33,7 +33,7 @@ def main():
     print("\nSaving representative cluster plots...")
     plot_clusters(clusters)
 
-    print("\n✅ Analysis complete. Plots saved in 'results/cluster_visuals/'.")
+    print("\n Analysis complete. Plots saved in 'results/cluster_visuals/'.")
 
 if __name__ == "__main__":
     main()
